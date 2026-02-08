@@ -13,6 +13,8 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
   const [tasks, setTasks] = useState<SnowTask[]>([]);
   const [myTaskIds, setMyTaskIds] = useState<string[]>([]);
+  const [ownerPasswordQuery, setOwnerPasswordQuery] = useState<string>('');
+  const [ownerPasswordInput, setOwnerPasswordInput] = useState<string>('');
   const [isAuthed, setIsAuthed] = useState<boolean>(() => localStorage.getItem(AUTH_STORAGE_KEY) === 'true');
   const [password, setPassword] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
@@ -71,7 +73,15 @@ const App: React.FC = () => {
   };
 
   const availableTasks = tasks.filter(t => t.status === 'available');
-  const myTasks = tasks.filter(t => myTaskIds.includes(t.id));
+  const myTasks = ownerPasswordQuery
+    ? tasks.filter(t => t.ownerPassword === ownerPasswordQuery)
+    : tasks.filter(t => myTaskIds.includes(t.id));
+
+  const handleFindMyTasks = () => {
+    if (!ownerPasswordInput.trim()) return;
+    setOwnerPasswordQuery(ownerPasswordInput.trim());
+    setView('my-jobs');
+  };
 
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
@@ -189,6 +199,21 @@ const App: React.FC = () => {
                   Tjen penge nu
                 </button>
               </div>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <input
+                  type="password"
+                  value={ownerPasswordInput}
+                  onChange={(event) => setOwnerPasswordInput(event.target.value)}
+                  className="w-full sm:w-72 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Password til dine opgaver"
+                />
+                <button
+                  onClick={handleFindMyTasks}
+                  className="bg-slate-900 text-white font-black px-6 py-3 rounded-xl shadow-sm hover:bg-slate-800 transition-all w-full sm:w-auto"
+                >
+                  Se mine opgaver
+                </button>
+              </div>
             </section>
 
             <section className="grid md:grid-cols-3 gap-8">
@@ -246,6 +271,33 @@ const App: React.FC = () => {
             <div>
               <h2 className="text-3xl font-black text-slate-800">Mine opgaver</h2>
               <p className="text-slate-500">Her kan du se og administrere de opgaver du selv har lagt ud.</p>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col md:flex-row gap-3 md:items-center">
+              <input
+                type="password"
+                value={ownerPasswordInput}
+                onChange={(event) => setOwnerPasswordInput(event.target.value)}
+                className="w-full md:w-80 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Skriv password for at finde dine opgaver"
+              />
+              <button
+                onClick={handleFindMyTasks}
+                className="bg-blue-600 text-white font-black px-6 py-3 rounded-xl shadow-sm hover:bg-blue-700 transition-all"
+              >
+                Find opgaver
+              </button>
+              {ownerPasswordQuery && (
+                <button
+                  onClick={() => {
+                    setOwnerPasswordQuery('');
+                    setOwnerPasswordInput('');
+                  }}
+                  className="bg-slate-100 text-slate-700 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Ryd filter
+                </button>
+              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
