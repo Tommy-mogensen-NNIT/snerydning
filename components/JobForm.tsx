@@ -16,7 +16,8 @@ export const JobForm: React.FC<JobFormProps> = ({ onSubmit }) => {
     price: 150,
     wantsSalt: false,
     hasEquipment: true,
-    description: ''
+    description: '',
+    ownerPassword: ''
   });
 
   const estimate = useMemo(() => {
@@ -148,6 +149,21 @@ export const JobForm: React.FC<JobFormProps> = ({ onSubmit }) => {
             value={formData.description}
             onChange={e => setFormData({ ...formData, description: e.target.value })}
           />
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-bold text-slate-700">Opgave-password</label>
+          <input
+            required
+            type="password"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            placeholder="Vælg et password"
+            value={formData.ownerPassword}
+            onChange={e => setFormData({ ...formData, ownerPassword: e.target.value })}
+          />
+          <p className="text-xs text-slate-500">
+            Bruges til at se kontaktinfo og fjerne “taget”-markering.
+          </p>
         </div>
 
         {/* AI Insight Box */}

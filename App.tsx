@@ -51,8 +51,12 @@ const App: React.FC = () => {
   };
 
   const handleTakeTask = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'taken' } : t));
-    alert("Super! Du har valgt opgaven. Kontakt venligst ejeren på det oplyste nummer.");
+    const phone = prompt("Indtast dit telefonnummer, så ejeren kan kontakte dig:");
+    if (!phone || !phone.trim()) {
+      return;
+    }
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'taken', takenByPhone: phone.trim() } : t));
+    alert("Tak! Opgaven er markeret som taget. Ejeren kan nu se dit nummer.");
   };
 
   const handleDeleteTask = (id: string) => {
@@ -60,6 +64,10 @@ const App: React.FC = () => {
       setTasks(prev => prev.filter(t => t.id !== id));
       setMyTaskIds(prev => prev.filter(mid => mid !== id));
     }
+  };
+
+  const handleClearTaken = (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'available', takenByPhone: undefined } : t));
   };
 
   const availableTasks = tasks.filter(t => t.status === 'available');
@@ -243,7 +251,13 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {myTasks.length > 0 ? (
                 myTasks.map(task => (
-                  <JobCard key={task.id} task={task} isOwner={true} onDelete={handleDeleteTask} />
+                  <JobCard
+                    key={task.id}
+                    task={task}
+                    isOwner={true}
+                    onDelete={handleDeleteTask}
+                    onClearTaken={handleClearTaken}
+                  />
                 ))
               ) : (
                 <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-slate-100 border-dashed">
