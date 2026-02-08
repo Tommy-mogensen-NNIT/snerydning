@@ -1,18 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { SnowTask, ViewState } from './types';
+import { CreateTaskPayload, SnowTask, ViewState } from './types';
 import { JobForm } from './components/JobForm';
 import { JobCard } from './components/JobCard';
 import { Snowflake, LayoutGrid, PlusCircle, Search, History, Wind } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'sneryd_tasks';
 const AUTH_STORAGE_KEY = 'sneryd_auth';
 const ACCESS_PASSWORD = 'Risbjergkvarteret';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
   const [tasks, setTasks] = useState<SnowTask[]>([]);
-  const [myTaskIds, setMyTaskIds] = useState<string[]>([]);
+  const [myTasks, setMyTasks] = useState<SnowTask[]>([]);
   const [ownerPasswordQuery, setOwnerPasswordQuery] = useState<string>('');
   const [ownerPasswordInput, setOwnerPasswordInput] = useState<string>('');
   const [ownerPhoneQuery, setOwnerPhoneQuery] = useState<string>('');
@@ -21,70 +20,120 @@ const App: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
 
-  // Load initial state
-  useEffect(() => {
-    const savedTasks = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+  const fetchJson = async (url: string, options?: RequestInit) => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || 'Serverfejl');
     }
-    const savedMyTasks = localStorage.getItem('sneryd_my_tasks');
-    if (savedMyTasks) {
-      setMyTaskIds(JSON.parse(savedMyTasks));
-    }
-  }, []);
-
-  // Save state
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    localStorage.setItem('sneryd_my_tasks', JSON.stringify(myTaskIds));
-  }, [myTaskIds]);
-
-  const handleCreateTask = (newTaskData: Omit<SnowTask, 'id' | 'createdAt' | 'status'>) => {
-    const newTask: SnowTask = {
-      ...newTaskData,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: Date.now(),
-      status: 'available'
-    };
-    setTasks(prev => [newTask, ...prev]);
-    setMyTaskIds(prev => [...prev, newTask.id]);
-    setView('my-jobs');
+    return response.json();
   };
 
-  const handleTakeTask = (id: string) => {
+  const loadTasks = async () => {
+    const data = await fetchJson('/api/tasks');
+    setTasks(data);
+  };
+
+  const loadMyTasks = async (phone: string, pass: string) => {
+    const data = await fetchJson(`/api/tasks/mine?phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(pass)}`);
+    setMyTasks(data);
+  };
+
+  useEffect(() => {
+    loadTasks().catch(() => {
+      // ignore initial load errors
+    });
+  }, []);
+
+  const handleCreateTask = async (newTaskData: CreateTaskPayload) => {
+    try {
+      await fetchJson('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTaskData)
+      });
+      setOwnerPhoneInput(newTaskData.phone);
+      setOwnerPasswordInput(newTaskData.ownerPassword);
+      await loadTasks();
+      await loadMyTasks(newTaskData.phone, newTaskData.ownerPassword);
+      setOwnerPhoneQuery(newTaskData.phone);
+      setOwnerPasswordQuery(newTaskData.ownerPassword);
+      setView('my-jobs');
+    } catch (error) {
+      alert('Kunne ikke oprette opgaven. Prøv igen.');
+    }
+  };
+
+  const handleTakeTask = async (id: string) => {
     const phone = prompt("Indtast dit telefonnummer, så ejeren kan kontakte dig:");
     if (!phone || !phone.trim()) {
       return;
     }
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'taken', takenByPhone: phone.trim() } : t));
-    alert("Tak! Opgaven er markeret som taget. Ejeren kan nu se dit nummer.");
-  };
-
-  const handleDeleteTask = (id: string) => {
-    if (confirm("Er du sikker på at opgaven skal fjernes? (Markeres som færdig)")) {
-      setTasks(prev => prev.filter(t => t.id !== id));
-      setMyTaskIds(prev => prev.filter(mid => mid !== id));
+    try {
+      await fetchJson(`/api/tasks/${id}/take`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.trim() })
+      });
+      await loadTasks();
+      alert("Tak! Opgaven er markeret som taget. Ejeren kan nu se dit nummer.");
+    } catch (error) {
+      alert('Kunne ikke tage opgaven. Prøv igen.');
     }
   };
 
-  const handleClearTaken = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'available', takenByPhone: undefined } : t));
+  const handleDeleteTask = async (id: string) => {
+    if (!ownerPhoneQuery || !ownerPasswordQuery) {
+      alert('Indtast telefonnummer og password for at administrere opgaven.');
+      return;
+    }
+    if (confirm("Er du sikker på at opgaven skal fjernes? (Markeres som færdig)")) {
+      try {
+        await fetchJson(`/api/tasks/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: ownerPhoneQuery, password: ownerPasswordQuery })
+        });
+        await loadTasks();
+        await loadMyTasks(ownerPhoneQuery, ownerPasswordQuery);
+      } catch (error) {
+        alert('Kunne ikke fjerne opgaven. Tjek password.');
+      }
+    }
+  };
+
+  const handleClearTaken = async (id: string) => {
+    if (!ownerPhoneQuery || !ownerPasswordQuery) {
+      alert('Indtast telefonnummer og password for at administrere opgaven.');
+      return;
+    }
+    try {
+      await fetchJson(`/api/tasks/${id}/clear-taken`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: ownerPhoneQuery, password: ownerPasswordQuery })
+      });
+      await loadTasks();
+      await loadMyTasks(ownerPhoneQuery, ownerPasswordQuery);
+    } catch (error) {
+      alert('Kunne ikke fjerne “taget”. Tjek password.');
+    }
   };
 
   const availableTasks = tasks.filter(t => t.status === 'available');
   const takenTasks = tasks.filter(t => t.status === 'taken');
-  const myTasks = ownerPasswordQuery && ownerPhoneQuery
-    ? tasks.filter(t => t.ownerPassword === ownerPasswordQuery && t.phone === ownerPhoneQuery)
-    : tasks.filter(t => myTaskIds.includes(t.id));
-
-  const handleFindMyTasks = () => {
+  const handleFindMyTasks = async () => {
     if (!ownerPasswordInput.trim() || !ownerPhoneInput.trim()) return;
-    setOwnerPasswordQuery(ownerPasswordInput.trim());
-    setOwnerPhoneQuery(ownerPhoneInput.trim());
-    setView('my-jobs');
+    const phone = ownerPhoneInput.trim();
+    const pass = ownerPasswordInput.trim();
+    try {
+      await loadMyTasks(phone, pass);
+      setOwnerPasswordQuery(pass);
+      setOwnerPhoneQuery(phone);
+      setView('my-jobs');
+    } catch (error) {
+      alert('Ingen opgaver fundet for det telefonnummer/password.');
+    }
   };
 
   const handleLogin = (event: React.FormEvent) => {
@@ -329,6 +378,7 @@ const App: React.FC = () => {
                     setOwnerPasswordInput('');
                     setOwnerPhoneQuery('');
                     setOwnerPhoneInput('');
+                    setMyTasks([]);
                   }}
                   className="bg-slate-100 text-slate-700 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 transition-all"
                 >
@@ -344,6 +394,7 @@ const App: React.FC = () => {
                     key={task.id}
                     task={task}
                     isOwner={true}
+                    showTakenByPhone={true}
                     onDelete={handleDeleteTask}
                     onClearTaken={handleClearTaken}
                   />

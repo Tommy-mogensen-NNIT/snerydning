@@ -1,34 +1,21 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { SnowTask } from '../types';
 import { MapPin, Phone, Square, Droplets, Hammer, Trash2, CheckCircle } from 'lucide-react';
 
 interface JobCardProps {
   task: SnowTask;
   isOwner?: boolean;
+  showTakenByPhone?: boolean;
   onTake?: (id: string) => void;
   onDelete?: (id: string) => void;
   onClearTaken?: (id: string) => void;
 }
 
-export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, onTake, onDelete, onClearTaken }) => {
+export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, showTakenByPhone, onTake, onDelete, onClearTaken }) => {
   const pricePerM2 = (task.price / task.area).toFixed(2);
-  const [isUnlocked, setIsUnlocked] = useState(false);
 
-  const ownerPhoneLabel = useMemo(() => {
-    if (isOwner) return task.phone;
-    return 'Skjult';
-  }, [isOwner, task.phone]);
-
-  const handleUnlock = () => {
-    const attempt = prompt("Indtast opgave-password for at se kontaktinfo:");
-    if (!attempt || !attempt.trim()) return;
-    if (attempt.trim() === task.ownerPassword) {
-      setIsUnlocked(true);
-      return;
-    }
-    alert("Forkert password.");
-  };
+  const ownerPhoneLabel = useMemo(() => task.phone, [task.phone]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow">
@@ -77,7 +64,7 @@ export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, onTake, onDelet
             {task.status === 'taken' && (
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm">
                 <div className="font-semibold text-slate-700 mb-2">Kontakt til den, der tog opgaven</div>
-                {isUnlocked ? (
+                {showTakenByPhone ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-slate-700">
                       <Phone size={16} className="text-blue-500" />
@@ -91,12 +78,7 @@ export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, onTake, onDelet
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleUnlock}
-                    className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Log ind med password
-                  </button>
+                  <p className="text-slate-500 text-sm italic">Log ind for at se kontaktinfo.</p>
                 )}
               </div>
             )}

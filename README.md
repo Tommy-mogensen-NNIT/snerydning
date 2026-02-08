@@ -1,7 +1,7 @@
 
 # SneRyd
 
-Nabolagsapp til snerydning.
+Nabolagsapp til snerydning med indbygget backend (Express + SQLite).
 
 ## Run Locally
 
@@ -9,4 +9,5 @@ Nabolagsapp til snerydning.
 
 
 1. Install dependencies: `npm install`
-2. Run the app: `npm run dev`
+2. Build frontend: `npm run build`
+3. Start server: `npm start`

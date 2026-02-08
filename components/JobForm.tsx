@@ -1,10 +1,10 @@
 
 import React, { useMemo, useState } from 'react';
-import { SnowTask } from '../types';
+import { CreateTaskPayload } from '../types';
 import { Snowflake, Info } from 'lucide-react';
 
 interface JobFormProps {
-  onSubmit: (task: Omit<SnowTask, 'id' | 'createdAt' | 'status'>) => void;
+  onSubmit: (task: CreateTaskPayload) => void;
 }
 
 export const JobForm: React.FC<JobFormProps> = ({ onSubmit }) => {
