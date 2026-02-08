@@ -6,7 +6,7 @@ import { JobCard } from './components/JobCard';
 import { Snowflake, LayoutGrid, PlusCircle, Search, History, Wind } from 'lucide-react';
 
 const AUTH_STORAGE_KEY = 'sneryd_auth';
-const ACCESS_PASSWORD = 'Risbjergkvarteret';
+const ACCESS_PASSWORD = 'RIS';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('home');
