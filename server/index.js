@@ -36,6 +36,15 @@ db.exec(`
 
 app.use(express.json({ limit: '1mb' }));
 
+const logActivity = (event, details = {}) => {
+  const entry = {
+    ts: new Date().toISOString(),
+    event,
+    ...details
+  };
+  console.log(JSON.stringify(entry));
+};
+
 const mapTask = (row, includeTakenPhone) => ({
   id: row.id,
   name: row.name,
@@ -53,6 +62,7 @@ const mapTask = (row, includeTakenPhone) => ({
 
 app.get('/api/tasks', (_req, res) => {
   const rows = db.prepare('SELECT * FROM tasks ORDER BY createdAt DESC').all();
+  logActivity('list_tasks', { count: rows.length });
   res.json(rows.map((row) => mapTask(row, false)));
 });
 
@@ -60,9 +70,11 @@ app.get('/api/tasks/mine', (req, res) => {
   const phone = String(req.query.phone || '').trim();
   const password = String(req.query.password || '').trim();
   if (!phone || !password) {
+    logActivity('my_tasks_failed', { phone: phone || null });
     return res.status(400).send('Telefonnummer og password er påkrævet.');
   }
   const rows = db.prepare('SELECT * FROM tasks WHERE phone = ? AND ownerPassword = ? ORDER BY createdAt DESC').all(phone, password);
+  logActivity('my_tasks', { phone, count: rows.length });
   res.json(rows.map((row) => mapTask(row, true)));
 });
 
@@ -80,6 +92,7 @@ app.post('/api/tasks', (req, res) => {
   } = req.body || {};
 
   if (!name || !phone || !address || !area || !price || ownerPassword === undefined) {
+    logActivity('create_task_failed', { phone: phone || null });
     return res.status(400).send('Manglende felter.');
   }
 
@@ -108,6 +121,7 @@ app.post('/api/tasks', (req, res) => {
     null
   );
 
+  logActivity('create_task', { id, phone: String(phone).trim(), area: Number(area), price: Number(price) });
   res.json({ id, createdAt, status });
 });
 
@@ -115,13 +129,16 @@ app.post('/api/tasks/:id/take', (req, res) => {
   const id = req.params.id;
   const phone = String(req.body?.phone || '').trim();
   if (!phone) {
+    logActivity('take_task_failed', { id, phone: null });
     return res.status(400).send('Telefonnummer er påkrævet.');
   }
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
   if (!existing) {
+    logActivity('take_task_failed', { id, phone, reason: 'not_found' });
     return res.status(404).send('Opgave findes ikke.');
   }
   db.prepare('UPDATE tasks SET status = ?, takenByPhone = ? WHERE id = ?').run('taken', phone, id);
+  logActivity('take_task', { id, phone });
   res.json({ ok: true });
 });
 
@@ -130,13 +147,16 @@ app.post('/api/tasks/:id/clear-taken', (req, res) => {
   const phone = String(req.body?.phone || '').trim();
   const password = String(req.body?.password || '').trim();
   if (!phone || !password) {
+    logActivity('clear_taken_failed', { id, phone: phone || null });
     return res.status(400).send('Telefonnummer og password er påkrævet.');
   }
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ? AND phone = ? AND ownerPassword = ?').get(id, phone, password);
   if (!existing) {
+    logActivity('clear_taken_failed', { id, phone, reason: 'unauthorized' });
     return res.status(403).send('Forkert password.');
   }
   db.prepare('UPDATE tasks SET status = ?, takenByPhone = NULL WHERE id = ?').run('available', id);
+  logActivity('clear_taken', { id, phone });
   res.json({ ok: true });
 });
 
@@ -145,13 +165,16 @@ app.delete('/api/tasks/:id', (req, res) => {
   const phone = String(req.body?.phone || '').trim();
   const password = String(req.body?.password || '').trim();
   if (!phone || !password) {
+    logActivity('delete_task_failed', { id, phone: phone || null });
     return res.status(400).send('Telefonnummer og password er påkrævet.');
   }
   const existing = db.prepare('SELECT * FROM tasks WHERE id = ? AND phone = ? AND ownerPassword = ?').get(id, phone, password);
   if (!existing) {
+    logActivity('delete_task_failed', { id, phone, reason: 'unauthorized' });
     return res.status(403).send('Forkert password.');
   }
   db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  logActivity('delete_task', { id, phone });
   res.json({ ok: true });
 });
 
