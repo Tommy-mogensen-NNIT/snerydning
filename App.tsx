@@ -15,6 +15,8 @@ const App: React.FC = () => {
   const [myTaskIds, setMyTaskIds] = useState<string[]>([]);
   const [ownerPasswordQuery, setOwnerPasswordQuery] = useState<string>('');
   const [ownerPasswordInput, setOwnerPasswordInput] = useState<string>('');
+  const [ownerPhoneQuery, setOwnerPhoneQuery] = useState<string>('');
+  const [ownerPhoneInput, setOwnerPhoneInput] = useState<string>('');
   const [isAuthed, setIsAuthed] = useState<boolean>(() => localStorage.getItem(AUTH_STORAGE_KEY) === 'true');
   const [password, setPassword] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
@@ -73,13 +75,14 @@ const App: React.FC = () => {
   };
 
   const availableTasks = tasks.filter(t => t.status === 'available');
-  const myTasks = ownerPasswordQuery
-    ? tasks.filter(t => t.ownerPassword === ownerPasswordQuery)
+  const myTasks = ownerPasswordQuery && ownerPhoneQuery
+    ? tasks.filter(t => t.ownerPassword === ownerPasswordQuery && t.phone === ownerPhoneQuery)
     : tasks.filter(t => myTaskIds.includes(t.id));
 
   const handleFindMyTasks = () => {
-    if (!ownerPasswordInput.trim()) return;
+    if (!ownerPasswordInput.trim() || !ownerPhoneInput.trim()) return;
     setOwnerPasswordQuery(ownerPasswordInput.trim());
+    setOwnerPhoneQuery(ownerPhoneInput.trim());
     setView('my-jobs');
   };
 
@@ -201,6 +204,13 @@ const App: React.FC = () => {
               </div>
               <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <input
+                  type="tel"
+                  value={ownerPhoneInput}
+                  onChange={(event) => setOwnerPhoneInput(event.target.value)}
+                  className="w-full sm:w-64 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Dit telefonnummer"
+                />
+                <input
                   type="password"
                   value={ownerPasswordInput}
                   onChange={(event) => setOwnerPasswordInput(event.target.value)}
@@ -275,6 +285,13 @@ const App: React.FC = () => {
 
             <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col md:flex-row gap-3 md:items-center">
               <input
+                type="tel"
+                value={ownerPhoneInput}
+                onChange={(event) => setOwnerPhoneInput(event.target.value)}
+                className="w-full md:w-64 rounded-xl border border-slate-200 px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Dit telefonnummer"
+              />
+              <input
                 type="password"
                 value={ownerPasswordInput}
                 onChange={(event) => setOwnerPasswordInput(event.target.value)}
@@ -292,6 +309,8 @@ const App: React.FC = () => {
                   onClick={() => {
                     setOwnerPasswordQuery('');
                     setOwnerPasswordInput('');
+                    setOwnerPhoneQuery('');
+                    setOwnerPhoneInput('');
                   }}
                   className="bg-slate-100 text-slate-700 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 transition-all"
                 >
