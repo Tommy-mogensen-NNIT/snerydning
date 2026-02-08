@@ -199,7 +199,7 @@ const App: React.FC = () => {
                   className="bg-blue-600 text-white font-black px-8 py-5 rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 text-lg"
                 >
                   <PlusCircle />
-                  Få ryddet din indkørsel
+                  Få ryddet sne
                 </button>
                 <button 
                   onClick={() => setView('browse-jobs')}
