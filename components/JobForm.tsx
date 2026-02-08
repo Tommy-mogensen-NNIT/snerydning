@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SnowTask } from '../types';
-import { getSmartEstimate } from '../services/geminiService';
-import { Snowflake, Info, Loader2 } from 'lucide-react';
+import { Snowflake, Info } from 'lucide-react';
 
 interface JobFormProps {
   onSubmit: (task: Omit<SnowTask, 'id' | 'createdAt' | 'status'>) => void;
@@ -20,22 +19,24 @@ export const JobForm: React.FC<JobFormProps> = ({ onSubmit }) => {
     description: ''
   });
 
-  const [estimate, setEstimate] = useState<any>(null);
-  const [loadingEstimate, setLoadingEstimate] = useState(false);
+  const estimate = useMemo(() => {
+    if (formData.area <= 0) return null;
 
-  useEffect(() => {
-    const fetchEstimate = async () => {
-      if (formData.area > 0) {
-        setLoadingEstimate(true);
-        const est = await getSmartEstimate(formData.area, formData.wantsSalt);
-        setEstimate(est);
-        setLoadingEstimate(false);
-      }
-    };
+    const baseMinutes = Math.ceil(formData.area / 8);
+    const saltMinutes = formData.wantsSalt ? 10 : 0;
+    const estimatedMinutes = Math.max(10, baseMinutes + saltMinutes);
 
-    const timer = setTimeout(fetchEstimate, 1000);
-    return () => clearTimeout(timer);
-  }, [formData.area, formData.wantsSalt]);
+    let proTip = 'Fjern sneen i baner, så overfladen bliver ensartet.';
+    if (formData.wantsSalt && !formData.hasEquipment) {
+      proTip = 'Husk at aftale hvem der har salt, hvis du ikke selv har.';
+    } else if (formData.wantsSalt) {
+      proTip = 'Brug salt sparsomt ved kanten af indkørslen for at spare tid.';
+    } else if (!formData.hasEquipment) {
+      proTip = 'Skriv om du kan låne udstyr, hvis du ikke selv har.';
+    }
+
+    return { estimatedMinutes, proTip };
+  }, [formData.area, formData.wantsSalt, formData.hasEquipment]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,8 +154,7 @@ export const JobForm: React.FC<JobFormProps> = ({ onSubmit }) => {
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
           <div className="flex items-center gap-2 text-blue-800 font-bold text-sm mb-2">
             <Info size={16} />
-            <span>Smart Estimering</span>
-            {loadingEstimate && <Loader2 size={14} className="animate-spin ml-auto" />}
+            <span>Estimering</span>
           </div>
           {estimate ? (
             <div className="text-xs text-blue-700 space-y-2">
