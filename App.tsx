@@ -75,6 +75,7 @@ const App: React.FC = () => {
   };
 
   const availableTasks = tasks.filter(t => t.status === 'available');
+  const takenTasks = tasks.filter(t => t.status === 'taken');
   const myTasks = ownerPasswordQuery && ownerPhoneQuery
     ? tasks.filter(t => t.ownerPassword === ownerPasswordQuery && t.phone === ownerPhoneQuery)
     : tasks.filter(t => myTaskIds.includes(t.id));
@@ -251,7 +252,7 @@ const App: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-black text-slate-800">Ledige opgaver</h2>
-                <p className="text-slate-500">Der er lige nu {availableTasks.length} aktive opgaver i dit område.</p>
+                <p className="text-slate-500">Der er lige nu {availableTasks.length} ledige og {takenTasks.length} tagne opgaver i dit område.</p>
               </div>
               <div className="bg-white p-2 rounded-xl border border-slate-200 flex gap-2">
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Nyeste først</button>
@@ -273,6 +274,17 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {takenTasks.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-2xl font-black text-slate-800">Tagne opgaver</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {takenTasks.map(task => (
+                    <JobCard key={task.id} task={task} onTake={handleTakeTask} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
