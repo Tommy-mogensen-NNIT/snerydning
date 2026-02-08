@@ -1,0 +1,7 @@
+{
+  "name": "SneRyd - Nabohjælp til Snerydning",
+  "description": "En platform hvor naboer kan hjælpe hinanden med snerydning. Boligejere kan oprette opgaver med m2-angivelse, pris og udstyrsbehov, mens friske unge kan finde småjobs i lokalområdet.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
