@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { SnowTask } from '../types';
-import { MapPin, Phone, Square, Droplets, Hammer, Trash2, CheckCircle } from 'lucide-react';
+import { MapPin, Phone, Square, Droplets, Hammer, Trash2, CheckCircle, Clock } from 'lucide-react';
 
 interface JobCardProps {
   task: SnowTask;
@@ -14,6 +14,17 @@ interface JobCardProps {
 
 export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, showTakenByPhone, onTake, onDelete, onClearTaken }) => {
   const pricePerM2 = (task.price / task.area).toFixed(2);
+
+  const createdLabel = useMemo(() => {
+    const date = new Date(task.createdAt);
+    return date.toLocaleString('da-DK', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }, [task.createdAt]);
 
   const ownerPhoneLabel = useMemo(() => task.phone, [task.phone]);
 
@@ -38,6 +49,10 @@ export const JobCard: React.FC<JobCardProps> = ({ task, isOwner, showTakenByPhon
           <div className="flex items-center p-2 bg-slate-50 rounded-lg">
             <Square size={16} className="text-blue-500 mr-2" />
             <span className="text-sm font-semibold">{task.area} m²</span>
+          </div>
+          <div className="flex items-center p-2 bg-slate-50 rounded-lg">
+            <Clock size={16} className="text-blue-500 mr-2" />
+            <span className="text-sm">{createdLabel}</span>
           </div>
           <div className="flex items-center p-2 bg-slate-50 rounded-lg">
             <Droplets size={16} className={task.wantsSalt ? "text-blue-500 mr-2" : "text-slate-300 mr-2"} />
