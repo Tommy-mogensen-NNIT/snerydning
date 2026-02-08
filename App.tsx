@@ -162,6 +162,12 @@ const App: React.FC = () => {
           
           <div className="hidden md:flex items-center gap-6">
             <button 
+              onClick={() => setView('home')}
+              className={`font-bold transition-colors ${view === 'home' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              Forside
+            </button>
+            <button 
               onClick={() => setView('post-job')}
               className={`font-bold transition-colors ${view === 'post-job' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
             >
